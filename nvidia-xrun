@@ -1,113 +1,434 @@
 #!/bin/bash
-DRY_RUN=0
+
+# nvidia-xrun - Utility to run separate X with discrete nvidia graphics with full performance
+# Copyright (C) 2018  Witko
+# Copyright (C) 2018  Pekka Helenius (~Fincer)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+# TODO Get rid of sudo and password asking
+
+###########################################################
+# Essential commands
+
+COMMANDS=(
+  id
+  ls
+  sudo
+  fgconsole
+  grep
+  modprobe
+  lsmod
+  rmmod
+  tee
+  cat
+  xinit
+  realpath
+  who
+  awk
+  agetty
+  chvt
+  ps
+)
+
+###########################################################
+# Check for command dependencies
+
+function checkCommands() {
+
+    if [[ $(which --help 2>/dev/null) ]] && [[ $(echo --help 2>/dev/null) ]]; then
+
+        local a=0
+        for command in ${@}; do
+            if [[ ! $(which $command 2>/dev/null) ]]; then
+                COMMANDS_NOTFOUND[$a]=$command
+                let a++
+            fi
+        done
+
+        if [[ -n $COMMANDS_NOTFOUND ]]; then
+            echo -e "\nError! The following commands could not be found: ${COMMANDS_NOTFOUND[*]}\nAborting\n"
+            exit 1
+        fi
+    else
+        exit 1
+    fi
+}
+
+checkCommands "${COMMANDS[*]}"
+
+###########################################################
+# Help message
+
 function printHelp {
-  echo "Utility to run games and applications in separate X on discrete Nvidia graphic card"
   echo "Usage: "
-  echo "nvidia-xrun [<options>] [<app>]"
-  echo "Options: "
-  echo "  -d    Dry run - prints the final command but does not execute it"
+  echo -e "nvidia-xrun [<app>]\n"
 }
 
-function execute {
-  if [ ${DRY_RUN} -eq 1 ]
-    then
-    echo ">>Dry run. Command: $*"
-  else
-    eval $*
-  fi
-}
+###########################################################
+# Set user input arguments
 
-
-if [[ $EUID -eq 0 ]]; then
-   echo "This script must not be run as root" >&2
-   exit 1
-fi
-
-if [ "$1" == "-d" ]
-  then
-    DRY_RUN=1
-    shift 1
-fi
-
-# calculate current VT
-LVT=`fgconsole`
-
-# calculate first usable display
-XNUM="-1"
-SOCK="something"
-while [ ! -z "$SOCK" ] 
-do
-  XNUM=$(( $XNUM + 1 ))
-  SOCK=$(ls -A -1 /tmp/.X11-unix | grep "X$XNUM" )
+a=0
+for arg in ${@}; do
+  args[$i]=${arg}
+  let i++
 done
 
-NEWDISP=":$XNUM"
+unset a
 
-if [ ! -z "$*" ] # generate exec line if arguments are given
-then 
-  # test if executable exists in path
-  if [ -x "$(which $1 2> /dev/null)" ]
-  then
-    # generate exec line
-    EXECL="$(which $1)"
-  # test if executable exists on disk
-  elif [ -e "$(realpath "$1")" ]
-  then
-    # generate exec line
-    EXECL="$(realpath "$1")"
+###########################################################
+# Get user input arguments
+
+function getArguments() {
+
+  if [[ -n "${args[*]}" ]]; then
+
+    # Test if executable exists in path
+    if [[ -x "$(which "${args[0]}" 2> /dev/null)" ]]; then
+
+      # Generate exec line
+      EXECL="$(which "${args[0]}")"
+
+    # Test if executable exists on disk
+    elif [[ -e "$(realpath "${args[0]}")" ]]; then
+
+      # Generate exec line
+      EXECL="$(realpath "${args[0]}")"
+
+    else
+      echo "${args[0]}: No such executable!"
+      exit 1
+    fi
+
+    #shift 1
+    #EXECL="$EXECL ${args[*]}"
+
+  # Exit the script if no arguments passed
   else
-    echo "$1: No such executable!"
+    echo "No valid input arguments given!"
+    printHelp
     exit 1
   fi
-  shift 1
-  EXECL="$EXECL $*"
-else # prepare to start new X sessions if no arguments passed
-  EXECL=""
+
+  EXECL="/etc/X11/xinit/nvidia-xinitrc $EXECL"
+
+}
+
+###########################################################
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
+  echo "Utility to run games and applications in separate X on discrete Nvidia graphic card"
+  printHelp
+  exit 0
 fi
 
-EXECL="/etc/X11/xinit/nvidia-xinitrc $EXECL"
+getArguments
 
-COMMAND="xinit $EXECL -- $NEWDISP vt$LVT -nolisten tcp -br -config nvidia-xorg.conf -configdir nvidia-xorg.conf.d"
+###########################################################
+# Check existence of bbswitch
 
-# --------- TURNING ON GPU -----------
-echo 'Waking up nvidia GPU'
-if ! [ -f /proc/acpi/bbswitch ] 
-then
-  execute "sudo modprobe bbswitch"
+if [[ $(echo $(lsmod | grep bbswitch > /dev/null)$?) -eq 1 ]]; then
+  echo "Kernel module 'bbswitch' is not loaded. Aborting"
+  exit 1
 fi
-execute "sudo tee /proc/acpi/bbswitch <<<ON"
 
-# ---------- LOADING MODULES ----------
-echo 'Loading nvidia module'
-execute "sudo modprobe nvidia"
+###########################################################
+# Execute functions
 
-echo 'Loading nvidia_modeset module'
-execute "sudo modprobe nvidia_modeset"
+# Get current user UID
+USER_ID=`id -u`
+USER_NAME=`id -nu`
 
-echo 'Loading nvidia_drm module'
-execute "sudo modprobe nvidia_drm"
+function execute_user() {
+  sudo -u \#${USER_ID} -- bash -c "${1}"
+}
 
-# ---------- EXECUTING COMMAND --------
-execute ${COMMAND}
+function execute_root() {
+  sudo -u \#0 -- bash -c "${1}"
+}
 
-# ---------- UNLOADING MODULES --------
-echo 'Unloading nvidia_drm module'
-execute "sudo rmmod nvidia_drm"
+###########################################################
+# Current VT session
 
-echo 'Unloading nvidia_modeset module'
-execute "sudo rmmod nvidia_modeset"
+CUR_VT=`execute_root "fgconsole"`
 
-echo 'Unloading nvidia module'
-execute "sudo rmmod nvidia"
+###########################################################
+# Calculate the first usable TTY
 
-# --------- TURNING OFF GPU ----------
-if [ -f /proc/acpi/bbswitch ] 
-then
-  echo 'Turning off nvidia GPU'
-  execute "sudo tee /proc/acpi/bbswitch <<<OFF"
+function findTTY() {
 
-  echo -n 'Current state of nvidia GPU: '
-  execute "cat /proc/acpi/bbswitch"
+  # Get all used system TTYs and list them in TTY_RESERVED array
+  function reservedTTY() {
+
+    local IFS=$'\n'
+    local i=0
+
+    for tty in $(who | grep tty | awk '{print $2}'); do
+      TTY_RESERVED[$i]=${tty}
+      let i++
+    done
+
+  }
+
+  # Get all available system TTYs and list them in TTY_ALL array
+  function allTTY() {
+
+    local IFS=$'\n'
+    local i=0
+
+    for tty in $(ls -v /dev | grep -E "tty[1-9]"); do
+      TTY_ALL[$i]=${tty}
+      let i++
+    done
+
+  }
+
+  reservedTTY
+  allTTY
+
+  # Delete all reserved tty's from TTY_ALL array
+  for i in "${TTY_RESERVED[@]}"; do
+         TTY_ALL=(${TTY_ALL[@]//*$i*})
+  done
+
+  # Get the first available TTY and set it into NVIDIA_TTY variable
+  NVIDIA_TTY=${TTY_ALL[0]}
+  NVIDIA_TTY_NUM=`echo $NVIDIA_TTY | sed 's/[a-z]//g'`
+
+  # Unset temporary arrays
+  unset TTY_ALL
+  unset TTY_RESERVED
+
+  echo "Running Nvidia in TTY session ${NVIDIA_TTY_NUM}"
+  echo "Press Alt + Ctrl + F${NVIDIA_TTY_NUM} to switch"
+}
+
+###########################################################
+# Calculate the first usable display
+
+function findDisplay() {
+
+  XNUM="-1"
+  SOCK="something"
+  while [[ -n "$SOCK" ]] ; do
+    XNUM=$(( $XNUM + 1 ))
+    SOCK=$(ls -A -1 /tmp/.X11-unix | grep "X$XNUM" )
+  done
+
+  NEWDISP=":$XNUM"
+
+}
+
+###########################################################
+# Log in to the first free/available TTY session
+
+function setTTYoverride() {
+
+  if [[ -n NVIDIA_TTY ]]; then
+
+    if [[ ! -d /etc/systemd/system/getty@${NVIDIA_TTY}.service.d ]]; then
+      execute_root "mkdir -p /etc/systemd/system/getty@${NVIDIA_TTY}.service.d"
+    fi
+
+  else
+    echo "Error! Couldn't determine a free TTY session."
+    exit 1
+  fi
+
+  execute_root "chmod 0755 /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
+
+execute_root "cat <<TTY_MSG > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/issue
+
+nvidia-xrun [${NVIDIA_TTY}]: Press Ctrl + Alt + F$CUR_VT to switch back.
+
+TTY_MSG"
+
+execute_root "cat <<TTY_OVERRIDE > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/override.conf
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/agetty --autologin ${USER_NAME} --noclear -f /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/issue %I $TERM
+TTY_OVERRIDE"
+
+  execute_root "chmod 0644 /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/override.conf"
+
+}
+
+function loadTTYsession() {
+  execute_root "systemctl restart getty@${NVIDIA_TTY}.service"
+
+  if [[ $(systemctl is-active getty@${NVIDIA_TTY}.service) == inactive ]]; then
+    echo "Error! Couldn't activate a new TTY session."
+    execute_root "rm -Rf /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
+    exit 1
+  fi
+}
+
+###########################################################
+# Enable GPU
+
+function enableGPU() {
+
+  # Turn on Nvidia GPU
+  echo 'Waking up Nvidia GPU'
+  if ! [[ -f /proc/acpi/bbswitch ]]; then
+    execute_root "modprobe bbswitch"
+  fi
+  execute_root "tee /proc/acpi/bbswitch <<<ON &> /dev/null"
+
+  # Load Nvidia kernel modules
+  # NOTE: We need to load these individually!
+  echo 'Loading Nvidia kernel modules'
+  execute_root "modprobe nvidia 2>/dev/null"
+  execute_root "modprobe nvidia_modeset 2>/dev/null"
+  execute_root "modprobe nvidia_drm 2>/dev/null"
+
+}
+
+###########################################################
+# Disable GPU
+
+function disableGPU() {
+  # Unload Nvidia kernel modules
+  # NOTE: We need to unload these individually!
+  echo 'Unloading Nvidia kernel modules'
+  execute_root "rmmod nvidia_drm 2>/dev/null"
+  execute_root "rmmod nvidia_modeset 2>/dev/null"
+  execute_root "rmmod nvidia 2>/dev/null"
+
+  # Turn off Nvidia GPU
+  if [[ -f /proc/acpi/bbswitch ]]; then
+    echo 'Turning off Nvidia GPU'
+
+    local c=3
+    while [[ $c -ge 0 ]]; do
+      execute_root "tee /proc/acpi/bbswitch <<<OFF &> /dev/null"
+      if [[ $(cat /proc/acpi/bbswitch) == *"OFF"* ]]; then
+        break
+      fi
+      sleep 1
+      let c--
+    done
+
+    if [[ $(cat /proc/acpi/bbswitch) == *"ON"* ]]; then
+      echo -e "Warning: Couldn't turn off Nvidia GPU.\n \
+Consider logging properly out from the Nvidia TTY session."
+    fi
+
+    echo -n 'Current state of Nvidia GPU: '
+    execute_user "cat /proc/acpi/bbswitch"
+  else
+    echo "bbswitch kernel module not loaded."
+  fi
+
+  # Log out from the new TTY session
+  echo "Logging out from graphical ${NVIDIA_TTY}..."
+}
+
+###########################################################
+
+function removeTTY() {
+
+  # Stop the Nvidia TTY session
+  execute_root "systemctl stop getty@${NVIDIA_TTY}.service"
+
+  # Remove Nvidia TTY overrides
+  execute_root "rm -Rf /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
+
+}
+
+###########################################################
+# Current Xorg PID
+
+CUR_XORG_PID=`ps h -o tty -o pid -C Xorg | grep "tty${CUR_VT}" | awk '{print $2}'`
+
+###########################################################
+# Emergency exit
+
+function emergency() {
+  trap SIGINT
+  disableGPU
+  if [[ $(echo $(${CUR_XORG_PID})$?) -ne 0 ]]; then
+    execute_root "chvt $CUR_VT"
+    removeTTY
+  fi
+  exit 0
+}
+
+###########################################################
+# Allow interruption of the script at any time (Ctrl + C)
+trap "emergency" INT
+
+###########################################################
+
+# Enable Nvidia GPU
+enableGPU
+
+if [[ ${CUR_XORG_PID} -ne 0 ]]; then
+  # Find first available TTY session for Nvidia GPU
+  findTTY
+
+  # Set TTY session configuration override for Nvidia GPU
+  setTTYoverride
+
+  # Load the new TTY session
+  loadTTYsession
 else
-  echo "Bbswitch kernel module not loaded."
+  NVIDIA_TTY="tty${CUR_VT}"
+  NVIDIA_TTY_NUM=${CUR_VT}
 fi
+
+# Find usable display
+findDisplay
+
+# Set command to execute new X session
+XRUN_COMMAND="xinit ${EXECL} -- $NEWDISP vt${NVIDIA_TTY_NUM} -nolisten tcp -br -config nvidia-xorg.conf -configdir nvidia-xorg.conf.d"
+
+if [[ ${CUR_XORG_PID} -ne 0 ]]; then
+  # Switch to the new TTY session
+  execute_root "chvt ${NVIDIA_TTY_NUM}"
+
+  sleep 4
+  execute_root "ttyecho -n /dev/${NVIDIA_TTY} ${XRUN_COMMAND}"
+else
+  eval ${XRUN_COMMAND}
+fi
+
+# Switch back to the default VT
+#sleep 3
+#execute_root "chvt $CUR_VT"
+
+# Get Nvidia Xorg server PID and wait for it to finish
+
+#XORG_PID=`ps h -o etime -o pid -C xinit | sort | awk 'NR==1{print $2}'`
+NVIDIA_XORG_PID=`ps h -o tty -o pid -C Xorg | grep "${NVIDIA_TTY}" | awk '{print $2}'`
+echo "Nvidia session Xorg PID: ${NVIDIA_XORG_PID}"
+echo "nvidia-xrun PID: $$"
+tail --pid=${NVIDIA_XORG_PID} -f /dev/null
+
+# Disable Nvidia GPU
+disableGPU
+
+if [[ ${CUR_XORG_PID} -ne 0 ]]; then
+  # Switch back to the default VT
+  execute_root "chvt ${CUR_VT}"
+
+  # Remove TTY overrides
+  removeTTY
+fi
+
+# Exit the script
+exit 0
+
+trap SIGINT
