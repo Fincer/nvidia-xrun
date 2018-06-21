@@ -34,7 +34,7 @@ a conf script for example `nano /etc/X11/nvidia-xorg.conf.d/30-nvidia.conf` to s
 
 You can use this command to get the bus id:
     
-	lspci | grep -i nvidia | awk '{print $1}`
+	lspci | grep -i nvidia | awk '{print $1}'
     
 Also this way you can adjust some nvidia settings if you encounter issues:
 
