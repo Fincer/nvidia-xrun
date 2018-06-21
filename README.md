@@ -16,7 +16,7 @@ NOTE: Turning Nvidia GPU off is not possible always, mostly because of interrupt
 
 This fork of nvidia-xrun has been revamped. It has some features the original [Witko/nvidia-xrun](https://github.com/Witko/nvidia-xrun) has not:
 
-- Run 'nvidia-xrun [app]' in any terminal and in any TTY session
+- Run `nvidia-xrun [app]` in any terminal and in any TTY session
 
   - Both graphical & command line environments are supported
 
@@ -29,10 +29,6 @@ The following parts are not well supported by this fork:
 - Dry-run support is removed. Maybe added later.
 
 - Not good support for user-specific `.nvidia-xinitrc` files
-
-### Correct permissions for nvidia-xrun
-
-You may need to check that `nvidia-xrun` has `4755` permissions. `4` stands for [SUID sticky bit](https://www.linuxnix.com/suid-set-suid-linuxunix/). In addition, `nvidia-xrun` should be owned by root. NOTE: Programs like graphical environments are still executed as regular user.
 
 ### Additional requirements - ttyecho
 
