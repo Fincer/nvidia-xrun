@@ -2,11 +2,27 @@
 These utility scripts aim to make the life easier for nvidia cards users.
 It started with a revelation that bumblebee in current state offers very poor performance. This solution offers a bit more complicated procedure but offers a full GPU utilization(in terms of linux drivers)
 
+## Fork updates
+
+This fork of nvidia-xrun has been revamped. It has some features the original [Witko/nvidia-xrun](https://github.com/Witko/nvidia-xrun) has not:
+
+- Run 'nvidia-xrun [app]' in any terminal and in any TTY session
+
+  - Both graphical & command line environments are supported
+
+  - If executed in a graphical environment, nvidia-xrun finds a free TTY for Nvidia GPU, and gives clear instructions how to switch between TTYs
+
+  - If executed in a command line environment, nvidia-xrun launches the program of your choise in the current TTY using Nvidia GPU 
+
+The following parts are not well supported by this fork:
+
+- Dry-run support is removed. Maybe added later.
+
+- Not good support for user-specific `.nvidia-xinitrc` files
+  
 ## Usage: 
-  1. switch to free tty
-  1. login
-  1. run `nvidia-xrun [app]`
-  1. enjoy
+  1. execute `nvidia-xrun [app]` in any terminal
+  2. enjoy
 
 Currently sudo is required as the script needs to wake up GPU, modprobe the nvidia driver and perform cleanup afterwards. For this we use bbswitch.
 
@@ -45,6 +61,9 @@ Also this way you can adjust some nvidia settings if you encounter issues:
         #  Option "UseDisplayDevice" "none"
     EndSection
     
+
+<details>
+<summary>Obsolete for now</summary>
 ## Automatically run window manager
 For convenience you can create `nano ~/.nvidia-xinitrc` and put there your favourite window manager:
 
@@ -60,6 +79,7 @@ With this you do not need to specify the app and you can simply run:
 
     nvidia-xrun
     
+</details>
 ## Aur package
 The aur package can be found here: https://aur.archlinux.org/packages/nvidia-xrun/
 
@@ -93,4 +113,3 @@ To avoid that, you should blacklist it (see link above).
 Also sometimes, blacklisting is not enough and you should use some hack to really avoid it to load.
 For example, adding `install nvidia /bin/false` to `/etc/modprobe.d/nvidia.conf` will make every load to fail.
 In that case, you should add `--ignore-install` to `modprobe` calls in `nvidia-xrun` script.
-
