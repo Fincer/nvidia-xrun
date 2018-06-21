@@ -70,6 +70,14 @@ function checkCommands() {
 checkCommands "${COMMANDS[*]}"
 
 ###########################################################
+# Check if we are root or not.
+
+if [[ $UID -eq 0 ]]; then
+    echo "Please run this program as regular user. Do not use root or sudo."
+    exit 1
+fi
+
+###########################################################
 # Help message
 
 function printHelp {
