@@ -2,6 +2,16 @@
 These utility scripts aim to make the life easier for nvidia cards users.
 It started with a revelation that bumblebee in current state offers very poor performance. This solution offers a bit more complicated procedure but offers a full GPU utilization(in terms of linux drivers)
 
+## Usage: 
+  1. execute `nvidia-xrun [app]` in any terminal
+  2. enjoy
+
+Currently sudo is used in `nvidia-xrun` script as it needs to wake up GPU, modprobe the nvidia driver and perform cleanup afterwards. For this we use bbswitch.
+<!--  -->
+NOTE: Turning Nvidia GPU off is not possible always, mostly because of interrupted `nvidia-xrun` commands. If you encounter this issue, re-running `nvidia-xrun [app]` and properly logging out may help to fix the issue.
+
+-------------------------
+
 ## Fork updates
 
 This fork of nvidia-xrun has been revamped. It has some features the original [Witko/nvidia-xrun](https://github.com/Witko/nvidia-xrun) has not:
@@ -19,12 +29,22 @@ The following parts are not well supported by this fork:
 - Dry-run support is removed. Maybe added later.
 
 - Not good support for user-specific `.nvidia-xinitrc` files
-  
-## Usage: 
-  1. execute `nvidia-xrun [app]` in any terminal
-  2. enjoy
 
-Currently sudo is required as the script needs to wake up GPU, modprobe the nvidia driver and perform cleanup afterwards. For this we use bbswitch.
+### Correct permissions for nvidia-xrun
+
+You may need to check that `nvidia-xrun` has `4755` permissions. `4` stands for [SUID sticky bit](https://www.linuxnix.com/suid-set-suid-linuxunix/). In addition, `nvidia-xrun` should be owned by root. NOTE: Programs like graphical environments are still executed as regular user.
+
+### Additional requirements - ttyecho
+
+The forked `nvidia-xrun` depends on [ttyecho](http://www.humbug.in/2010/utility-to-send-commands-or-data-to-other-terminals-ttypts/) program.
+
+You should compile `ttyecho.c` with `gcc`:
+
+    gcc ttyecho.c -o ttyecho
+    
+Then either install `ttyecho` as a custom package or place it manually in `/usr/local/bin/` folder.
+
+-------------------------
 
 ## Structure
 * **nvidia-xrun** - uses following dir structure:
