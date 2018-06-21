@@ -20,9 +20,9 @@ This fork of nvidia-xrun has been revamped. It has some features the original [W
 
   - Both graphical & command line environments are supported
 
-  - If executed in a graphical environment, nvidia-xrun finds a free TTY for Nvidia GPU, and gives clear instructions how to switch between TTYs
+    - If executed in a graphical environment, nvidia-xrun finds a free TTY for Nvidia GPU, and gives clear instructions how to switch between TTYs
 
-  - If executed in a command line environment, nvidia-xrun launches the program of your choise in the current TTY using Nvidia GPU 
+    - If executed in a command line environment, nvidia-xrun launches the program of your choise in the current TTY using Nvidia GPU 
 
 The following parts are not well supported by this fork:
 
