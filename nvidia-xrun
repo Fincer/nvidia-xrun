@@ -19,6 +19,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 # TODO Get rid of sudo and password asking
+# TODO Add support for other gettys such as getty
+# TODO Support init.d? Especially Gentoo users in mind
 
 ###########################################################
 # Essential commands
