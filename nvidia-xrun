@@ -38,6 +38,7 @@ COMMANDS=(
   realpath
   who
   awk
+  ttyecho
   agetty
   chvt
   ps
