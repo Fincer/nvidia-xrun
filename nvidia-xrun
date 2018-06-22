@@ -379,6 +379,8 @@ function emergency() {
 trap "emergency" INT
 
 ###########################################################
+###########################################################
+# RUN MOST OF THE SCRIPT FUNCTIONS HERE
 
 # Enable Nvidia GPU
 enableGPU
