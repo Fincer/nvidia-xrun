@@ -240,7 +240,7 @@ function findDisplay() {
 }
 
 ###########################################################
-# Log in to the first free/available TTY session
+# Set TTY session overrides & enable the new TTY for use
 
 function setTTYoverride() {
 
