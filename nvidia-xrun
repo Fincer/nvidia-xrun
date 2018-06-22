@@ -74,7 +74,7 @@ checkCommands "${COMMANDS[*]}"
 ###########################################################
 # Check if we are root or not.
 
-if [[ $UID -eq 0 ]]; then
+if [[ ${UID} -eq 0 ]]; then
     echo "Please run this program as regular user. Do not use root or sudo."
     exit 1
 fi
@@ -261,7 +261,7 @@ function setTTYoverride() {
 
 execute_root "cat <<TTY_MSG > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/issue
 
-nvidia-xrun [${NVIDIA_TTY}]: Press Ctrl + Alt + F$CUR_VT to switch back.
+nvidia-xrun [${NVIDIA_TTY}]: Press Ctrl + Alt + F${CUR_VT} to switch back.
 
 TTY_MSG"
 
