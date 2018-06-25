@@ -21,6 +21,7 @@
 # TODO Get rid of sudo and password asking
 # TODO Add support for other gettys such as getty
 # TODO Support init.d? Especially Gentoo users in mind
+# TODO Avoid TTY overrides for TTYs which already have existing overrides in /etc/systemd/system
 
 ###########################################################
 # Essential commands
