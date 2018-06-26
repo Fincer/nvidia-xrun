@@ -454,7 +454,6 @@ XRUN_COMMAND="xinit ${EXECL} -- $NEWDISP vt${NVIDIA_TTY_NUM} -nolisten tcp -br -
 #if [[ ${CUR_XORG_PID} -ne 0 ]]; then
 if [[ $CUR_XORG_PID != "" ]]; then
   # Switch to the new TTY session
-  echo $NVIDIA_TTY_NUM
   execute_root "chvt ${NVIDIA_TTY_NUM}"
 
   sleep 4
@@ -469,11 +468,12 @@ fi
 
 # Get Nvidia Xorg server PID and wait for it to finish
 
-#XORG_PID=`ps h -o etime -o pid -C xinit | sort | awk 'NR==1{print $2}'`
-NVIDIA_XORG_PID=`ps h -o tty -o pid -C Xorg | grep "${NVIDIA_TTY}" | awk '{print $2}'`
-echo "Nvidia session Xorg PID: ${NVIDIA_XORG_PID}"
 echo "nvidia-xrun PID: $$"
-tail --pid=${NVIDIA_XORG_PID} -f /dev/null
+if [[ $CUR_XORG_PID != "" ]]; then
+  NVIDIA_XORG_PID=`ps h -o tty -o pid -C Xorg | grep "${NVIDIA_TTY}" | awk '{print $2}'`
+  echo "Nvidia session Xorg PID: ${NVIDIA_XORG_PID}"
+  tail --pid=${NVIDIA_XORG_PID} -f /dev/null
+fi
 
 # Disable Nvidia GPU
 disableGPU
