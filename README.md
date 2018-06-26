@@ -34,11 +34,13 @@ The following parts are not well supported by this fork:
 
 The forked `nvidia-xrun` depends on [ttyecho](http://www.humbug.in/2010/utility-to-send-commands-or-data-to-other-terminals-ttypts/) program.
 
+You can find ttyecho in subfolder 'ttyecho', included in this repository. PKGBUILD script is for Arch Linux and variants.
+
 You should compile `ttyecho.c` with `gcc`:
 
     gcc ttyecho.c -o ttyecho
     
-Then either install `ttyecho` as a custom package or place it manually in `/usr/local/bin/` folder.
+Install compiled `ttyecho` binary either as a custom package or place it manually in `/usr/local/bin/` folder.
 
 -------------------------
 

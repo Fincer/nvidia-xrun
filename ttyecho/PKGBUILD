@@ -1,0 +1,22 @@
+pkgname=ttyecho
+pkgver=1
+pkgrel=1
+pkgdesc="Execute commands in another TTY session"
+arch=('any')
+url="http://www.humbug.in/2010/utility-to-send-commands-or-data-to-other-terminals-ttypts/"
+license=('Other')
+source=(ttyecho.c)
+depends=('glibc')
+makedepends=('gcc' 'glibc')
+
+md5sums=('83bda4f93d93c59555d647a54253ed00')
+
+build() {
+  cd $srcdir
+  gcc ttyecho.c -o ttyecho
+}
+
+package() {
+    mkdir -p $pkgdir/usr/bin/
+    install -Dm 755 $srcdir/ttyecho $pkgdir/usr/bin/
+}
