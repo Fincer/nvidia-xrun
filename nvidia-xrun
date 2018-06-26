@@ -19,7 +19,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 # TODO Get rid of sudo and password asking
-# TODO Add support for other gettys such as getty
 # TODO Support init.d? Especially Gentoo users in mind
 
 ###########################################################
@@ -204,12 +203,20 @@ function findTTY() {
   # Get all available system TTYs and list them in TTY_ALL array
   function allTTY() {
 
-    local IFS=$'\n'
-    local i=0
+    # Get available TTYs using systemd logind.conf settings
+    # See https://www.freedesktop.org/software/systemd/man/logind.conf.html
+    #
+    if [[ -f /etc/systemd/logind.conf ]]; then
+      TTY_COUNT=`grep -m 1 NAutoVTs /etc/systemd/logind.conf | grep -Eo "[0-9]*"`
+    else
 
-    for tty in $(ls -v /dev | grep -E "tty[1-9]"); do
-      TTY_ALL[$i]=${tty}
-      let i++
+      # Default TTY count
+      TTY_COUNT=6
+    fi
+
+    # First available TTY for user is 1, not 0. Thus i=1
+    for ((i=1;i<=TTY_COUNT;i++)); do
+      TTY_ALL[$i]="tty$i"
     done
 
   }
@@ -242,6 +249,11 @@ function findTTY() {
       for i in "${TTY_OVERRIDES[@]}"; do
         TTY_ALL=(${TTY_ALL[@]//*$i*})
       done
+    fi
+
+    if [[ -z TTY_ALL ]]; then
+      echo "Error: Couldn't find any free TTY sessions. Aborting."
+      exit 1
     fi
 
     # Get the first available TTY and set it into NVIDIA_TTY variable
@@ -375,8 +387,7 @@ function disableGPU() {
     done
 
     if [[ $(cat /proc/acpi/bbswitch) == *"ON"* ]]; then
-      echo -e "Warning: Couldn't turn off Nvidia GPU.\n \
-Consider logging properly out from the Nvidia TTY session."
+      echo "Warning: Couldn't turn off Nvidia GPU."
     fi
 
     echo -n 'Current state of Nvidia GPU: '
