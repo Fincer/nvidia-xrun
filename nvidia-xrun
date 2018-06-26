@@ -26,27 +26,26 @@
 # Essential commands
 
 COMMANDS=(
-  id
-  ls
-  sudo
+  agetty
+  awk
+  cat
+  chvt
   fgconsole
   grep
-  modprobe
+  id
+  ls
   lsmod
-  rmmod
-  tee
-  cat
-  xinit
-  realpath
-  who
-  awk
-  ttyecho
-  agetty
-  chvt
+  modprobe
   ps
-  tail
+  realpath
+  rmmod
   sleep
+  sudo
+  tail
+  tee
+  ttyecho
   who
+  xinit
 )
 
 ###########################################################
