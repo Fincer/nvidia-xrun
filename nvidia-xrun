@@ -21,7 +21,6 @@
 # TODO Get rid of sudo and password asking
 # TODO Add support for other gettys such as getty
 # TODO Support init.d? Especially Gentoo users in mind
-# TODO Avoid TTY overrides for TTYs which already have existing overrides in /etc/systemd/system
 
 ###########################################################
 # Essential commands
@@ -179,12 +178,18 @@ function execute_root() {
 
 CUR_VT=`execute_root "fgconsole"`
 
+# We set CUR_VT variable in anyway to avoid some wierd behavior 
+# when determining CUR_XORG_PID variable
+if [[ $CUR_VT = "" ]]; then
+  CUR_VT="none"
+fi
+
 ###########################################################
 # Calculate the first usable TTY
 
 function findTTY() {
 
-  # Get all used system TTYs and list them in TTY_RESERVED array
+  # Get all already used system TTYs and list them in TTY_RESERVED array
   function reservedTTY() {
 
     local IFS=$'\n'
@@ -210,24 +215,54 @@ function findTTY() {
 
   }
 
+  # Find all existing TTY overrides in the system and put them into a new array TTY_OVERRIDES
+  function existingTTYoverrides() {
+
+    if [[ -d /etc/systemd/system ]]; then
+
+      local i=0
+
+      for tty_override in $(ls /etc/systemd/system | grep -oE "tty[0-9]"); do
+        TTY_OVERRIDES[$i]=${tty_override}
+        let i++
+      done
+
+    fi
+
+  }
+
+  function ttyCleanup() {
+
+    # Delete all reserved tty's from TTY_ALL array
+    for i in "${TTY_RESERVED[@]}"; do
+      TTY_ALL=(${TTY_ALL[@]//*$i*})
+    done
+
+    if [[ -n TTY_OVERRIDES ]]; then
+      # Delete all overridden tty's from TTY_ALL array
+      for i in "${TTY_OVERRIDES[@]}"; do
+        TTY_ALL=(${TTY_ALL[@]//*$i*})
+      done
+    fi
+
+    # Get the first available TTY and set it into NVIDIA_TTY variable
+    NVIDIA_TTY=${TTY_ALL[0]}
+    NVIDIA_TTY_NUM=`echo $NVIDIA_TTY | sed 's/[a-z]//g'`
+
+    # Unset temporary arrays
+    unset TTY_ALL
+    unset TTY_RESERVED
+    unset TTY_OVERRIDES
+
+    echo "Running Nvidia in TTY session ${NVIDIA_TTY_NUM}"
+    echo "Press Alt + Ctrl + F${NVIDIA_TTY_NUM} to switch"
+  }
+
   reservedTTY
   allTTY
+  existingTTYoverrides
+  ttyCleanup
 
-  # Delete all reserved tty's from TTY_ALL array
-  for i in "${TTY_RESERVED[@]}"; do
-         TTY_ALL=(${TTY_ALL[@]//*$i*})
-  done
-
-  # Get the first available TTY and set it into NVIDIA_TTY variable
-  NVIDIA_TTY=${TTY_ALL[0]}
-  NVIDIA_TTY_NUM=`echo $NVIDIA_TTY | sed 's/[a-z]//g'`
-
-  # Unset temporary arrays
-  unset TTY_ALL
-  unset TTY_RESERVED
-
-  echo "Running Nvidia in TTY session ${NVIDIA_TTY_NUM}"
-  echo "Press Alt + Ctrl + F${NVIDIA_TTY_NUM} to switch"
 }
 
 ###########################################################
@@ -235,11 +270,11 @@ function findTTY() {
 
 function findDisplay() {
 
-  XNUM="-1"
+  XNUM=-1
   SOCK="something"
-  while [[ -n "$SOCK" ]] ; do
+  while [[ -n "$SOCK" ]]; do
     XNUM=$(( $XNUM + 1 ))
-    SOCK=$(ls -A -1 /tmp/.X11-unix | grep "X$XNUM" )
+    SOCK=$(ls -A1 /tmp/.X11-unix | grep "X$XNUM")
   done
 
   NEWDISP=":$XNUM"
@@ -264,17 +299,21 @@ function setTTYoverride() {
 
   execute_root "chmod 0755 /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
 
+#####
 execute_root "cat <<TTY_MSG > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/issue
 
 nvidia-xrun [${NVIDIA_TTY}]: Press Ctrl + Alt + F${CUR_VT} to switch back.
 
 TTY_MSG"
+#####
 
+#####
 execute_root "cat <<TTY_OVERRIDE > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/override.conf
 [Service]
 ExecStart=
 ExecStart=-/usr/bin/agetty --autologin ${USER_NAME} --noclear -f /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/issue %I $TERM
 TTY_OVERRIDE"
+#####
 
   execute_root "chmod 0644 /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/override.conf"
 
@@ -348,7 +387,7 @@ Consider logging properly out from the Nvidia TTY session."
   fi
 
   # Log out from the new TTY session
-  echo "Logging out from graphical ${NVIDIA_TTY}..."
+  echo "Logging out from graphical TTY ${NVIDIA_TTY_NUM}..."
 }
 
 ###########################################################
@@ -369,12 +408,13 @@ function removeTTY() {
 CUR_XORG_PID=`ps h -o tty -o pid -C Xorg | grep "tty${CUR_VT}" | awk '{print $2}'`
 
 ###########################################################
-# Emergency exit
+# Emergency exit behavior (Ctrl + C // SIGINT)
 
 function emergency() {
   trap SIGINT
   disableGPU
-  if [[ $(echo $(${CUR_XORG_PID})$?) -ne 0 ]]; then
+#  if [[ $(echo $(${CUR_XORG_PID})$?) -ne 0 ]]; then
+  if [[ $CUR_XORG_PID != "" ]]; then
     execute_root "chvt $CUR_VT"
     removeTTY
   fi
@@ -392,7 +432,7 @@ trap "emergency" INT
 # Enable Nvidia GPU
 enableGPU
 
-if [[ ${CUR_XORG_PID} -ne 0 ]]; then
+if [[ $CUR_XORG_PID != "" ]]; then
   # Find first available TTY session for Nvidia GPU
   findTTY
 
@@ -412,8 +452,10 @@ findDisplay
 # Set command to execute new X session
 XRUN_COMMAND="xinit ${EXECL} -- $NEWDISP vt${NVIDIA_TTY_NUM} -nolisten tcp -br -config nvidia-xorg.conf -configdir nvidia-xorg.conf.d"
 
-if [[ ${CUR_XORG_PID} -ne 0 ]]; then
+#if [[ ${CUR_XORG_PID} -ne 0 ]]; then
+if [[ $CUR_XORG_PID != "" ]]; then
   # Switch to the new TTY session
+  echo $NVIDIA_TTY_NUM
   execute_root "chvt ${NVIDIA_TTY_NUM}"
 
   sleep 4
@@ -437,7 +479,7 @@ tail --pid=${NVIDIA_XORG_PID} -f /dev/null
 # Disable Nvidia GPU
 disableGPU
 
-if [[ ${CUR_XORG_PID} -ne 0 ]]; then
+if [[ $CUR_XORG_PID != "" ]]; then
   # Switch back to the default VT
   execute_root "chvt ${CUR_VT}"
 
