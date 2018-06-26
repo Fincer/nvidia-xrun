@@ -29,7 +29,6 @@ COMMANDS=(
   awk
   cat
   chvt
-  fgconsole
   grep
   id
   ls
@@ -174,7 +173,7 @@ function execute_root() {
 ###########################################################
 # Current VT session
 
-CUR_VT=`execute_root "fgconsole"`
+CUR_VT=`grep -oE "[0-9]" /sys/class/tty/tty0/active`
 
 # We set CUR_VT variable in anyway to avoid some wierd behavior 
 # when determining CUR_XORG_PID variable
