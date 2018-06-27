@@ -395,7 +395,7 @@ function disableGPU() {
 ###########################################################
 # Script arguments
 
-if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]] || [[ -z $1 ]]; then
   echo "Utility to run games and applications in separate X on discrete Nvidia graphic card"
   printHelp
   exit 0
