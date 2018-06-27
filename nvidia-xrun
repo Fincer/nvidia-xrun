@@ -18,7 +18,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-# TODO Get rid of sudo and password asking
 # TODO Support init.d? Especially Gentoo users in mind
 # TODO Replace systemd getty stuff with openvt?
 # TODO Black screen of D3D11 apps when switching between TTYs
@@ -45,6 +44,7 @@ COMMANDS=(
   tee
   ttyecho
   who
+  whoami
   xinit
 )
 
@@ -75,11 +75,24 @@ function checkCommands() {
 checkCommands "${COMMANDS[*]}"
 
 ###########################################################
+# Check who I truly am
+
+USER_NAME=$(who -m | awk '{print $1}')
+
+# Get current user UID
+USER_ID=`id -u ${USER_NAME}`
+
+###########################################################
 # Check if we are root or not.
 
-if [[ ${UID} -eq 0 ]]; then
-    echo "Please run this program as regular user. Do not use root or sudo."
-    exit 1
+if [[ $(whoami) == "root" ]]; then
+  echo "Please run this program as regular user using sudo. Do not use root."
+  exit 1
+fi
+
+if [[ ${USER_NAME} != "root" ]] && [[ ${UID} -ne 0 ]]; then
+  echo "Please run this program as regular user using sudo."
+  exit 1
 fi
 
 ###########################################################
@@ -155,18 +168,13 @@ fi
 ###########################################################
 # Execute functions
 
-# Get current user UID
-USER_ID=`id -u`
-USER_NAME=`id -nu`
+function execute() {
+  bash -c "${1}"
+}
 
 function execute_user() {
   sudo -u \#${USER_ID} -- bash -c "${1}"
 }
-
-function execute_root() {
-  sudo -u \#0 -- bash -c "${1}"
-}
-
 
 ###########################################################
 # Calculate the first usable TTY
@@ -286,7 +294,7 @@ function setTTYoverride() {
   if [[ -n NVIDIA_TTY ]]; then
 
     if [[ ! -d /etc/systemd/system/getty@${NVIDIA_TTY}.service.d ]]; then
-      execute_root "mkdir -p /etc/systemd/system/getty@${NVIDIA_TTY}.service.d"
+      execute "mkdir -p /etc/systemd/system/getty@${NVIDIA_TTY}.service.d"
     fi
 
   else
@@ -294,10 +302,10 @@ function setTTYoverride() {
     exit 1
   fi
 
-  execute_root "chmod 0755 /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
+  execute "chmod 0755 /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
 
 #####
-execute_root "cat <<TTY_MSG > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/issue
+execute "cat <<TTY_MSG > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/issue
 
 nvidia-xrun [${NVIDIA_TTY}]: Press Ctrl + Alt + F${CUR_VT} to switch back.
 
@@ -305,23 +313,23 @@ TTY_MSG"
 #####
 
 #####
-execute_root "cat <<TTY_OVERRIDE > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/override.conf
+execute "cat <<TTY_OVERRIDE > /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/override.conf
 [Service]
 ExecStart=
 ExecStart=-/usr/bin/agetty --autologin ${USER_NAME} --noclear -f /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/issue %I $TERM
 TTY_OVERRIDE"
 #####
 
-  execute_root "chmod 0644 /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/override.conf"
+  execute "chmod 0644 /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/override.conf"
 
 }
 
 function loadTTYsession() {
-  execute_root "systemctl restart getty@${NVIDIA_TTY}.service"
+  execute "systemctl restart getty@${NVIDIA_TTY}.service"
 
   if [[ $(systemctl is-active getty@${NVIDIA_TTY}.service) == inactive ]]; then
     echo "Error! Couldn't activate a new TTY session."
-    execute_root "rm -Rf /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
+    execute "rm -Rf /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
     exit 1
   fi
 }
@@ -334,16 +342,16 @@ function enableGPU() {
   # Turn on Nvidia GPU
   echo 'Waking up Nvidia GPU'
   if ! [[ -f /proc/acpi/bbswitch ]]; then
-    execute_root "modprobe bbswitch"
+    execute "modprobe bbswitch"
   fi
-  execute_root "tee /proc/acpi/bbswitch <<<ON &> /dev/null"
+  execute "tee /proc/acpi/bbswitch <<<ON &> /dev/null"
 
   # Load Nvidia kernel modules
   # NOTE: We need to load these individually!
   echo 'Loading Nvidia kernel modules'
-  execute_root "modprobe nvidia 2>/dev/null"
-  execute_root "modprobe nvidia_modeset 2>/dev/null"
-  execute_root "modprobe nvidia_drm 2>/dev/null"
+  execute "modprobe nvidia 2>/dev/null"
+  execute "modprobe nvidia_modeset 2>/dev/null"
+  execute "modprobe nvidia_drm 2>/dev/null"
 
 }
 
@@ -354,9 +362,9 @@ function disableGPU() {
   # Unload Nvidia kernel modules
   # NOTE: We need to unload these individually!
   echo 'Unloading Nvidia kernel modules'
-  execute_root "rmmod nvidia_drm 2>/dev/null"
-  execute_root "rmmod nvidia_modeset 2>/dev/null"
-  execute_root "rmmod nvidia 2>/dev/null"
+  execute "rmmod nvidia_drm 2>/dev/null"
+  execute "rmmod nvidia_modeset 2>/dev/null"
+  execute "rmmod nvidia 2>/dev/null"
 
   # Turn off Nvidia GPU
   if [[ -f /proc/acpi/bbswitch ]]; then
@@ -364,7 +372,7 @@ function disableGPU() {
 
     local c=3
     while [[ $c -ge 0 ]]; do
-      execute_root "tee /proc/acpi/bbswitch <<<OFF &> /dev/null"
+      execute "tee /proc/acpi/bbswitch <<<OFF &> /dev/null"
       if [[ $(cat /proc/acpi/bbswitch) == *"OFF"* ]]; then
         break
       fi
@@ -376,14 +384,15 @@ function disableGPU() {
       echo "Warning: Couldn't turn off Nvidia GPU."
     fi
 
-    echo -n 'Current state of Nvidia GPU: '
-    execute_user "cat /proc/acpi/bbswitch"
+    echo "Current state of Nvidia GPU: $(cat /proc/acpi/bbswitch | awk '{print $NF}')"
   else
     echo "bbswitch kernel module not loaded."
   fi
 
-  # Log out from the new TTY session
-  echo "Logging out from graphical TTY ${NVIDIA_TTY_NUM}..."
+  if [[ -n "$NVIDIA_TTY_NUM" ]]; then
+    # Log out from the new TTY session
+    echo "Logging out from graphical TTY ${NVIDIA_TTY_NUM}..."
+  fi
 }
 
 ###########################################################
@@ -413,10 +422,10 @@ fi
 function removeTTY() {
 
   # Stop the Nvidia TTY session
-  execute_root "systemctl stop getty@${NVIDIA_TTY}.service"
+  execute "systemctl stop getty@${NVIDIA_TTY}.service"
 
   # Remove Nvidia TTY overrides
-  execute_root "rm -Rf /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
+  execute "rm -Rf /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
 
 }
 
@@ -450,7 +459,7 @@ function emergency() {
   disableGPU
 #  if [[ $(echo $(${CUR_XORG_PID})$?) -ne 0 ]]; then
   if [[ $CUR_XORG_PID != "" ]]; then
-    execute_root "chvt $CUR_VT"
+    execute "chvt $CUR_VT"
     removeTTY
   fi
   exit 0
@@ -487,28 +496,21 @@ findDisplay
 # Set command to execute new X session
 XRUN_COMMAND="xinit ${EXECL} -- $NEWDISP vt${NVIDIA_TTY_NUM} -nolisten tcp -br -config nvidia-xorg.conf -configdir nvidia-xorg.conf.d"
 
-#if [[ ${CUR_XORG_PID} -ne 0 ]]; then
 if [[ $CUR_XORG_PID != "" ]]; then
   # Switch to the new TTY session
-  execute_root "chvt ${NVIDIA_TTY_NUM}"
-
+  execute "chvt ${NVIDIA_TTY_NUM}"
   sleep 4
-  execute_root "ttyecho -n /dev/${NVIDIA_TTY} ${XRUN_COMMAND}"
+  execute "ttyecho -n /dev/${NVIDIA_TTY} ${XRUN_COMMAND}"
 else
-  eval ${XRUN_COMMAND}
+  execute_user "${XRUN_COMMAND}"
 fi
 
-# Switch back to the default VT
-#sleep 3
-#execute_root "chvt $CUR_VT"
-
 # Get Nvidia Xorg server PID and wait for it to finish
-
 echo "nvidia-xrun PID: $$"
 if [[ $CUR_XORG_PID != "" ]]; then
   NVIDIA_XORG_PID=`ps h -o tty -o pid -C Xorg | grep "${NVIDIA_TTY}" | awk '{print $2}'`
   echo "Nvidia session Xorg PID: ${NVIDIA_XORG_PID}"
-  tail --pid=${NVIDIA_XORG_PID} -f /dev/null
+  tail --pid=${NVIDIA_XORG_PID} -f /dev/null 2> /dev/null
 fi
 
 # Disable Nvidia GPU
@@ -516,7 +518,7 @@ disableGPU
 
 if [[ $CUR_XORG_PID != "" ]]; then
   # Switch back to the default VT
-  execute_root "chvt ${CUR_VT}"
+  execute "chvt ${CUR_VT}"
 
   # Remove TTY overrides
   removeTTY

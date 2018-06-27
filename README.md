@@ -1,10 +1,11 @@
 # nvidia-xrun
 These utility scripts aim to make the life easier for nvidia cards users.
-It started with a revelation that bumblebee in current state offers very poor performance. This solution offers a bit more complicated procedure but offers a full GPU utilization(in terms of linux drivers)
+It started with a revelation that bumblebee in current state offers very poor performance. This solution offers a bit more complicated procedure but offers a full GPU utilization (in terms of linux drivers).
 
-## Usage: 
-  1. execute `nvidia-xrun [app]` in any terminal
-  2. enjoy
+## Usage:
+  1. Make sure your user belongs to 'sudo' group
+  2. Execute `sudo nvidia-xrun [app]` in any terminal
+  3. Enjoy
 
 ### Available options:
 
@@ -13,9 +14,7 @@ It started with a revelation that bumblebee in current state offers very poor pe
 
 -------------------------
 
-Currently sudo is used in `nvidia-xrun` script as it needs to wake up GPU, modprobe the nvidia driver and perform cleanup afterwards. For this we use bbswitch.
-<!--  -->
-NOTE: Turning Nvidia GPU off is not possible always, mostly because of interrupted `nvidia-xrun` commands. If you encounter this issue, re-running `nvidia-xrun [app]` and properly logging out may help to fix the issue.
+NOTE: Turning Nvidia GPU off is not possible always, mostly because of interrupted `nvidia-xrun` commands. If you encounter this issue, run `nvidia-xrun -u` or `nvidia-xrun --unload` to turn off your NVIDIA GPU.
 
 -------------------------
 
@@ -23,7 +22,7 @@ NOTE: Turning Nvidia GPU off is not possible always, mostly because of interrupt
 
 This fork of nvidia-xrun has been revamped. It has some features the original [Witko/nvidia-xrun](https://github.com/Witko/nvidia-xrun) has not:
 
-- Run `nvidia-xrun [app]` in any terminal and in any TTY session
+- Run `sudo nvidia-xrun [app]` in any terminal and in any TTY session
 
   - Both graphical & command line environments are supported
 
@@ -47,21 +46,22 @@ You should compile `ttyecho.c` with `gcc`:
 
     gcc ttyecho.c -o ttyecho
     
-Install compiled `ttyecho` binary either as a custom package or place it manually in `/usr/local/bin/` folder.
+Install compiled `ttyecho` binary either as a custom package or place it manually in `/usr/local/bin/` folder. `ttyecho` must be found in your [PATH](http://www.linfo.org/path_env_var.html).
 
 -------------------------
 
 ## Structure
 * **nvidia-xrun** - uses following dir structure:
 * **/usr/bin/nvidia-xrun** - the executable script
+* **/usr/bin/ttyecho** - ttyecho executable (Execute commands in another TTY session)
 * **/etc/X11/nvidia-xorg.conf** - the main X confing file
 * **/etc/X11/xinit/nvidia-xinitrc** - xinitrc config file. Contains the setting of provider output source
 * **/etc/X11/xinit/nvidia-xinitrc.d** - custom xinitrc scripts directory
 * **/etc/X11/nvidia-xorg.conf.d** - custom X config directory
 * **/usr/share/xsessions/nvidia-xrun-openbox.desktop** - xsession file for openbox
 * **/usr/share/xsessions/nvidia-xrun-plasma.desktop** - xsession file for plasma
+* **/etc/sudoers.d/nvidia-xrun-sudoers** - sudoers override for nvidia-xrun to run it without password
 * **[OPTIONAL] ~/.nvidia-xinitrc** - user-level custom xinit script file. You can put here your favourite window manager for example
-
 
 ## Setting the right bus id
 Usually the 1:0:0 bus is correct. If this is not your case(you can find out through lspci or bbswitch output mesages) you can create
