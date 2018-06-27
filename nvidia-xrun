@@ -20,6 +20,8 @@
 
 # TODO Get rid of sudo and password asking
 # TODO Support init.d? Especially Gentoo users in mind
+# TODO Replace systemd getty stuff with openvt?
+# TODO Black screen of D3D11 apps when switching between TTYs
 
 ###########################################################
 # Essential commands
@@ -133,7 +135,12 @@ function getArguments() {
     exit 1
   fi
 
-  EXECL="/etc/X11/xinit/nvidia-xinitrc $EXECL"
+  if [[ -f /etc/X11/xinit/nvidia-xinitrc ]]; then
+    EXECL="/etc/X11/xinit/nvidia-xinitrc $EXECL"
+  else
+    echo "Can't find file '/etc/X11/xinit/nvidia-xinitrc'. Aborting."
+    exit 1
+  fi
 
 }
 
