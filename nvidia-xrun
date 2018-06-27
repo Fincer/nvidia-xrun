@@ -44,7 +44,6 @@ COMMANDS=(
   tee
   ttyecho
   who
-  whoami
   xinit
 )
 
@@ -85,13 +84,11 @@ USER_ID=`id -u ${USER_NAME}`
 ###########################################################
 # Check if we are root or not.
 
-if [[ $(whoami) == "root" ]]; then
-  echo "Please run this program as regular user using sudo. Do not use root."
-  exit 1
-fi
-
 if [[ ${USER_NAME} != "root" ]] && [[ ${UID} -ne 0 ]]; then
   echo "Please run this program as regular user using sudo."
+  exit 1
+elif [[ ${USER_NAME} == "root" ]] && [[ ${UID} -eq 0 ]]; then
+  echo "Please run this program as regular user using sudo. Do not use root."
   exit 1
 fi
 
