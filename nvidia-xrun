@@ -87,7 +87,7 @@ fi
 
 function printHelp {
   echo "Usage: "
-  echo -e "nvidia-xrun [<app>]\n"
+  echo -e "nvidia-xrun [<app>]\nOptions:\n\t-h, --help\tThis help text\n\t-u, --unload\tUnload Nvidia GPU\n"
 }
 
 ###########################################################
@@ -145,16 +145,6 @@ function getArguments() {
 }
 
 ###########################################################
-
-if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
-  echo "Utility to run games and applications in separate X on discrete Nvidia graphic card"
-  printHelp
-  exit 0
-fi
-
-getArguments
-
-###########################################################
 # Check existence of bbswitch
 
 if [[ $(echo $(lsmod | grep bbswitch > /dev/null)$?) -eq 1 ]]; then
@@ -177,16 +167,6 @@ function execute_root() {
   sudo -u \#0 -- bash -c "${1}"
 }
 
-###########################################################
-# Current VT session
-
-CUR_VT=`grep -oE "[0-9]" /sys/class/tty/tty0/active`
-
-# We set CUR_VT variable in anyway to avoid some wierd behavior 
-# when determining CUR_XORG_PID variable
-if [[ $CUR_VT = "" ]]; then
-  CUR_VT="none"
-fi
 
 ###########################################################
 # Calculate the first usable TTY
@@ -407,6 +387,28 @@ function disableGPU() {
 }
 
 ###########################################################
+# Script arguments
+
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then
+  echo "Utility to run games and applications in separate X on discrete Nvidia graphic card"
+  printHelp
+  exit 0
+
+elif [[ $1 == "-u" ]] || [[ $1 == "--unload" ]]; then
+
+  if [[ $(echo $(grep ON /proc/acpi/bbswitch > /dev/null)$?) -eq 0 ]]; then
+    disableGPU
+    exit 0
+  else
+    echo "Nvidia GPU already unloaded."
+    exit 0
+  fi
+
+else
+  getArguments
+fi
+
+###########################################################
 
 function removeTTY() {
 
@@ -417,6 +419,23 @@ function removeTTY() {
   execute_root "rm -Rf /etc/systemd/system/getty@${NVIDIA_TTY}.service.d/"
 
 }
+
+###########################################################
+# Current VT session
+
+function currentVT() {
+
+  CUR_VT=`grep -oE "[0-9]" /sys/class/tty/tty0/active`
+
+  # We set CUR_VT variable in anyway to avoid some wierd behavior 
+  # when determining CUR_XORG_PID variable
+  if [[ $CUR_VT = "" ]]; then
+    CUR_VT="none"
+  fi
+
+}
+
+currentVT
 
 ###########################################################
 # Current Xorg PID
