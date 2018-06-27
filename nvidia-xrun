@@ -97,7 +97,7 @@ fi
 
 function printHelp {
   echo "Usage: "
-  echo -e "nvidia-xrun [<app>]\nOptions:\n\t-h, --help\tThis help text\n\t-u, --unload\tUnload Nvidia GPU\n"
+  echo -e "\nsudo nvidia-xrun [<app>]\nOptions:\n\t-h, --help\tThis help text\n\t-u, --unload\tUnload Nvidia GPU\n"
 }
 
 ###########################################################
