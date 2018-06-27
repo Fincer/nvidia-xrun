@@ -6,6 +6,13 @@ It started with a revelation that bumblebee in current state offers very poor pe
   1. execute `nvidia-xrun [app]` in any terminal
   2. enjoy
 
+### Available options:
+
+  - `-h, --help` - Print help text
+  - `-u, --unload` - Attempt to unload Nvidia GPU
+
+-------------------------
+
 Currently sudo is used in `nvidia-xrun` script as it needs to wake up GPU, modprobe the nvidia driver and perform cleanup afterwards. For this we use bbswitch.
 <!--  -->
 NOTE: Turning Nvidia GPU off is not possible always, mostly because of interrupted `nvidia-xrun` commands. If you encounter this issue, re-running `nvidia-xrun [app]` and properly logging out may help to fix the issue.
