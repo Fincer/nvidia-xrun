@@ -20,6 +20,7 @@
 
 # TODO Support init.d? Especially Gentoo users in mind
 # TODO Replace systemd getty stuff with openvt?
+# TODO: Investigate behavior in multi-monitor setups with different resolutions
 
 # BUG: in some cases, Nvidia TTY does not automatically change back to the original TTY session. When the script terminates, Nvidia GPU may stay ON, too. This can happen when user boots up computer, logs in Xorg session and immediately runs the script.
 # BUG: In some cases, the script attempts to switch to Nvidia TTY session but fails in that. Re-running the script may succeed.
