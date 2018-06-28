@@ -14,6 +14,10 @@ It started with a revelation that bumblebee in current state offers very poor pe
 
 -------------------------
 
+NOTE: consider adding bash alias `alias nvidia-xrun='sudo nvidia-xrun'` in your `~/.bashrc` file
+
+-------------------------
+
 NOTE: Turning Nvidia GPU off is not possible always, mostly because of interrupted `nvidia-xrun` commands. If you encounter this issue, run `nvidia-xrun -u` or `nvidia-xrun --unload` to turn off your NVIDIA GPU.
 
 -------------------------
