@@ -1,1 +1,1 @@
-%sudo  ALL=(ALL) NOPASSWD: /usr/bin/nvidia-xrun
+%sudo  ALL=(ALL) NOPASSWD: /usr/bin/nvidia-xrun-core
