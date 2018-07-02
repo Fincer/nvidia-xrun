@@ -18,6 +18,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+# TODO During script initialization, remove all old inactive TTY override confs which are created by the nvidia-xrun script
 # TODO When checking 'nvidia-xrun' process, consider existence of multiple 'nvidia-xrun' processes
 # TODO Do not try to turn off Nvidia GPU if another nvidia-xrun-core process exists. Else, do it.
 # TODO Make TTY selectable by user
