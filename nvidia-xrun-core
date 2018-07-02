@@ -20,16 +20,16 @@
 
 # TODO When checking 'nvidia-xrun' process, consider existence of multiple 'nvidia-xrun' processes
 # TODO Do not try to turn off Nvidia GPU if another nvidia-xrun-core process exists. Else, do it.
-# TODO Prevent multiple similar arguments (such as '--tty=3 --tty4', '-u -u', '-h --help' etc.)
-# TODO Make '-h' and '--help' argument override any other given arguments
-# TODO Make TTY selectable as argument
+# TODO Make TTY selectable by user
+# TODO Prevent multiple similar arguments (such as '--tty=3 --tty=4', '-u -u', '-h --help' etc.)
+# TODO Make '-h' and '--help' arguments to override any other given arguments
 # TODO Support init.d? Especially Gentoo users in mind
 # TODO Replace systemd getty stuff with openvt?
-# TODO: Investigate behavior in multi-monitor setups with different resolutions
+# TODO Investigate behavior of multi-monitor setups with different resolutions
 
-# BUG: in some cases, Nvidia TTY does not automatically change back to the original TTY session. When the script terminates, Nvidia GPU may stay ON, too. This can happen when user boots up computer, logs in Xorg session and immediately runs the script.
-# BUG: In some cases, the script attempts to switch to Nvidia TTY session but fails in that. Re-running the script may succeed.
-# BUG: black screen in graphically intense apps when switching between TTYs.
+# BUG in some cases, Nvidia TTY does not automatically change back to the original TTY session. When the script terminates, Nvidia GPU may stay ON, too. This can happen when user boots up computer, logs in Xorg session and immediately runs the script.
+# BUG In some cases, the script attempts to switch to Nvidia TTY session but fails in that. Re-running the script may succeed.
+# BUG Black screen in graphically intense apps when switching between TTYs.
 
 ###########################################################
 # Essential commands
