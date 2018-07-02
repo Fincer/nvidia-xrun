@@ -429,7 +429,7 @@ else
 
   # TODO This may be useless check, see 'nvidia-xrun' file
   for arg in ${@}; do
-    if [[ $arg == "sudo"]] || [[ $arg == "su" ]]; then
+    if [[ $arg == "sudo" ]] || [[ $arg == "su" ]]; then
       echo "Can't use either 'sudo' or 'su' as an input argument. Aborting."
       exit 1
     fi
