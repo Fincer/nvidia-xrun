@@ -3,8 +3,8 @@ These utility scripts aim to make the life easier for nvidia cards users.
 It started with a revelation that bumblebee in current state offers very poor performance. This solution offers a bit more complicated procedure but offers a full GPU utilization (in terms of linux drivers).
 
 ## Usage:
-  1. Make sure your user belongs to 'sudo' group
-  2. Execute `sudo nvidia-xrun [app]` in any terminal
+  1. Make sure your user belongs to 'sudo' group* (see below for further info)
+  2. Execute `nvidia-xrun [app]` in any terminal
   3. Enjoy
 
 ### Available options:
@@ -12,9 +12,7 @@ It started with a revelation that bumblebee in current state offers very poor pe
   - `-h, --help` - Print help text
   - `-u, --unload` - Attempt to unload Nvidia GPU
 
--------------------------
-
-NOTE: consider adding bash alias `alias nvidia-xrun='sudo nvidia-xrun'` in your `~/.bashrc` file
+*'nvidia-xrun-core' requires root permissions for several key commands such as loading/unloading Nvidia kernel modules
 
 -------------------------
 
@@ -26,7 +24,7 @@ NOTE: Turning Nvidia GPU off is not possible always, mostly because of interrupt
 
 This fork of nvidia-xrun has been revamped. It has some features the original [Witko/nvidia-xrun](https://github.com/Witko/nvidia-xrun) has not:
 
-- Run `sudo nvidia-xrun [app]` in any terminal and in any TTY session
+- Run `nvidia-xrun [app]` in any terminal and in any TTY session
 
   - Both graphical & command line environments are supported
 
