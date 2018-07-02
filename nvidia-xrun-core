@@ -18,6 +18,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+# TODO When checking 'nvidia-xrun' process, consider existence of multiple 'nvidia-xrun' processes
+# TODO Do not try to turn off Nvidia GPU if another nvidia-xrun-core process exists. Else, do it.
+# TODO Prevent multiple similar arguments (such as '--tty=3 --tty4', '-u -u', '-h --help' etc.)
+# TODO Make '-h' and '--help' argument override any other given arguments
 # TODO Make TTY selectable as argument
 # TODO Support init.d? Especially Gentoo users in mind
 # TODO Replace systemd getty stuff with openvt?
@@ -89,6 +93,7 @@ fi
 
 ###########################################################
 # Check who I truly am
+# TODO This may be useless check, see 'nvidia-xrun' file
 
 USER_NAME=$(who -m | awk '{print $1}')
 
@@ -433,12 +438,26 @@ else
       echo "Can't use either 'sudo' or 'su' as an input argument. Aborting."
       exit 1
     fi
+
+    # TODO Match arguments such as -t 4 or -t 7
+    # TODO Limit TTY number between max allowed by systemd. See & modify findTTY function
+    # TODO Prevent setting override for TTYs which already have been overridden
+    #if [[ $arg =~ ^\-\-tty=[0-9]$ ]]; then
+    #  NVIDIA_TTY_NUM=`echo $arg | sed 's/[^0-9]*//g'`
+    #  NVIDIA_TTY=`echo "tty$NVIDIA_TTY_NUM"`
+    #fi
+
   done
   unset arg
 
   getArguments
 
 fi
+
+# TODO remove these tests
+#echo $NVIDIA_TTY
+#echo $NVIDIA_TTY_NUM
+#exit
 
 ###########################################################
 
