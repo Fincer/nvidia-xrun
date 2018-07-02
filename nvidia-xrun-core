@@ -97,6 +97,7 @@ USER_ID=`id -u ${USER_NAME}`
 
 ###########################################################
 # Check if we are root or not.
+# TODO This may be useless check, see 'nvidia-xrun' file
 
 if [[ ${USER_NAME} != "root" ]] && [[ ${UID} -ne 0 ]]; then
   echo "Please run this program as regular user using sudo."
@@ -425,7 +426,18 @@ elif [[ $1 == "-u" ]] || [[ $1 == "--unload" ]]; then
   fi
 
 else
+
+  # TODO This may be useless check, see 'nvidia-xrun' file
+  for arg in ${@}; do
+    if [[ $arg == "sudo"]] || [[ $arg == "su" ]]; then
+      echo "Can't use either 'sudo' or 'su' as an input argument. Aborting."
+      exit 1
+    fi
+  done
+  unset arg
+
   getArguments
+
 fi
 
 ###########################################################
