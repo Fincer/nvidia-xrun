@@ -54,7 +54,8 @@ Install compiled `ttyecho` binary either as a custom package or place it manuall
 
 ## Structure
 * **nvidia-xrun** - uses following dir structure:
-* **/usr/bin/nvidia-xrun** - the executable script
+* **/usr/bin/nvidia-xrun** - the executable script wrapper
+* **/usr/bin/nvidia-xrun-core** - the executable (core) script
 * **/usr/bin/ttyecho** - ttyecho executable (Execute commands in another TTY session)
 * **/etc/X11/nvidia-xorg.conf** - the main X confing file
 * **/etc/X11/xinit/nvidia-xinitrc** - xinitrc config file. Contains the setting of provider output source
