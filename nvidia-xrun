@@ -18,30 +18,60 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 ###########################################################
+# Essential commands
+
+COMMANDS=(
+  nvidia-xrun-core
+  ps
+  sudo
+)
+
+###########################################################
+# Check for command dependencies
+
+function checkCommands() {
+
+    if [[ $(which --help 2>/dev/null) ]] && [[ $(echo --help 2>/dev/null) ]]; then
+
+        local a=0
+        for command in ${@}; do
+            if [[ ! $(which $command 2>/dev/null) ]]; then
+                COMMANDS_NOTFOUND[$a]=$command
+                let a++
+            fi
+        done
+
+        if [[ -n $COMMANDS_NOTFOUND ]]; then
+            echo -e "\nError! The following commands could not be found: ${COMMANDS_NOTFOUND[*]}\nAborting\n"
+            exit 1
+        fi
+    else
+        exit 1
+    fi
+}
+
+checkCommands "${COMMANDS[*]}"
+
+###########################################################
+# Core script contents
 
 if [[ $UID -ne 0 ]]; then
 
-  if [[ $(echo $(which nvidia-xrun-core &> /dev/null)$?) -eq 0 ]]; then
+  for arg in ${@}; do
+    if [[ $arg == *"nvidia-xrun"* ]]; then
+      echo "Can't use nvidia-xrun executables as arguments. Aborting."
+      exit 1
+    fi
+  done
 
-    for arg in ${@}; do
-      if [[ $arg == *"nvidia-xrun"* ]]; then
-        echo "Can't use nvidia-xrun executables as arguments. Aborting."
-        exit 1
-      fi
-    done
+  sudo nvidia-xrun-core $*
 
-    sudo nvidia-xrun-core $*
+  # We wait until the previous command is executed after which we terminate.
+  # We do this to keep this process alive because existence of this process,
+  # known as 'nvidia-xrun' is checked by the nvidia-xrun-core
+  wait
+  exit 0
 
-    # We wait until the previous command is executed after which we terminate.
-    # We do this to keep this process alive because existence of this process,
-    # known as 'nvidia-xrun' is checked by the nvidia-xrun-core
-    wait
-    exit 0
-
-  else
-    echo "Can't find 'nvidia-xrun-core' executable. Aborting."
-    exit 1
-  fi
 else
   echo "Do not run this executable as root or with sudo. Aborting."
   exit 1
