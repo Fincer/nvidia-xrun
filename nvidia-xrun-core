@@ -372,6 +372,7 @@ function enableGPU() {
   echo 'Loading Nvidia kernel modules'
   execute "modprobe nvidia 2>/dev/null"
   execute "modprobe nvidia_modeset 2>/dev/null"
+  execute "modprobe nvidia_uvm 2>/dev/null"
   execute "modprobe nvidia_drm 2>/dev/null"
 
 }
@@ -385,6 +386,7 @@ function disableGPU() {
   echo 'Unloading Nvidia kernel modules'
   execute "rmmod nvidia_drm 2>/dev/null"
   execute "rmmod nvidia_modeset 2>/dev/null"
+  execute "rmmod nvidia_uvm 2>/dev/null"
   execute "rmmod nvidia 2>/dev/null"
 
   # Turn off Nvidia GPU
